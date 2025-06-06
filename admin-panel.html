@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | AI Tools Navigator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    .sidebar {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    }
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 16px 20px;
+      max-width: 400px;
+      z-index: 1000;
+      border-left: 4px solid #10b981;
+      animation: slideIn 0.3s ease-out;
+    }
+    .toast.error {
+      border-left-color: #ef4444;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 0.25rem 0.625rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .badge-pending {
+      background-color: #eab308;
+      color: white;
+    }
+    .badge-approved {
+      background-color: #10b981;
+      color: white;
+    }
+    .badge-rejected {
+      background-color: #ef4444;
+      color: white;
+    }
+    .badge-active {
+      background-color: #10b981;
+      color: white;
+    }
+    .badge-inactive {
+      background-color: #ef4444;
+      color: white;
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      max-width: 525px;
+      width: 100%;
+      margin: 1rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <div class="flex min-h-screen">
+    <!-- Mobile sidebar toggle -->
+    <div class="fixed top-4 left-4 z-50 md:hidden">
+      <button id="sidebarToggle" class="h-10 w-10 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center">
+        <i data-lucide="menu" class="h-5 w-5"></i>
+      </button>
+    </div>
+
+    <!-- Admin Sidebar -->
+    <div id="sidebar" class="fixed md:sticky top-0 left-0 z-40 h-screen w-64 transform transition-transform duration-300 ease-in-out sidebar text-white flex flex-col -translate-x-full md:translate-x-0">
+      <div class="p-4 border-b border-slate-700">
+        <h2 class="text-xl font-bold">Admin Panel</h2>
+      </div>
+      
+      <div class="flex-1 overflow-auto py-4 space-y-2">
+        <div class="px-4 py-2">
+          <h3 class="text-xs uppercase text-slate-400 font-medium mb-2">Management</h3>
+          <ul class="space-y-1">
+            <li>
+              <a href="#" class="nav-link flex items-center px-3 py-2 text-slate-200 rounded-md hover:bg-slate-800" data-tab="tools">
+                <i data-lucide="database" class="mr-2 h-5 w-5"></i>
+                <span>Tools</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-link flex items-center px-3 py-2 text-slate-200 rounded-md hover:bg-slate-800" data-tab="users">
+                <i data-lucide="users" class="mr-2 h-5 w-5"></i>
+                <span>Users</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-link flex items-center px-3 py-2 text-slate-200 rounded-md hover:bg-slate-800" data-tab="admins">
+                <i data-lucide="users" class="mr-2 h-5 w-5"></i>
+                <span>Admins</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-link flex items-center px-3 py-2 text-slate-200 rounded-md hover:bg-slate-800" data-tab="activity">
+                <i data-lucide="activity" class="mr-2 h-5 w-5"></i>
+                <span>Activity</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="p-4 border-t border-slate-700">
+        <div class="flex justify-between items-center mb-4">
+          <div class="flex items-center">
+            <div class="h-8 w-8 mr-2 bg-purple-600 rounded-full flex items-center justify-center text-white font-medium">
+              A
+            </div>
+            <span class="text-sm font-medium">Super Admin</span>
+          </div>
+          <button id="signOutBtn" class="text-slate-400 hover:text-white hover:bg-slate-800 rounded p-1">
+            <i data-lucide="log-out" class="h-4 w-4"></i>
+          </button>
+        </div>
+        
+        <a href="https://websnowi.github.io/websnowi/" class="w-full flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white transition-colors">
+          <i data-lucide="layout-dashboard" class="mr-2 h-4 w-4"></i>
+          Back to Website
+        </a>
+      </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="flex-1 bg-slate-50">
+      <div class="p-6">
+        <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
+        
+        <!-- Tabs Navigation -->
+        <div class="inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-500 w-full max-w-lg mb-6">
+          <button class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all bg-white text-gray-900 shadow-sm" data-tab="tools">
+            Tools Management
+          </button>
+          <button class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all" data-tab="users">
+            Users Management
+          </button>
+          <button class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all" data-tab="admins">
+            Admin Management
+          </button>
+          <button class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all" data-tab="activity">
+            User Activity
+          </button>
+        </div>
+        
+        <!-- Tools Management Tab -->
+        <div id="toolsContent" class="tab-content active bg-white p-6 rounded-lg shadow-sm">
+          <h2 class="text-2xl font-bold mb-4">Tools Management</h2>
+          <div class="mb-4">
+            <span class="mr-4">Total Tools: <strong id="totalToolsCount">0</strong></span>
+            <span class="mr-4">Pending: <strong id="pendingToolsCount">0</strong></span>
+            <span class="mr-4">Approved: <strong id="approvedToolsCount">0</strong></span>
+            <span>Rejected: <strong id="rejectedToolsCount">0</strong></span>
+          </div>
+          
+          <!-- Tool Filters -->
+          <div class="mb-4 border-b border-gray-200">
+            <div class="flex space-x-2">
+              <button class="tool-filter-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all bg-white text-gray-900 shadow-sm" data-filter="all">All Tools</button>
+              <button class="tool-filter-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all" data-filter="pending">Pending</button>
+              <button class="tool-filter-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all" data-filter="approved">Approved</button>
+              <button class="tool-filter-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all" data-filter="rejected">Rejected</button>
+            </div>
+          </div>
+          
+          <!-- Tools Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="text-xs uppercase bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3">Name</th>
+                  <th class="px-6 py-3">Status</th>
+                  <th class="px-6 py-3">Created At</th>
+                  <th class="px-6 py-3 w-[200px]">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="toolsTableBody">
+                <!-- Tools will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Users Management Tab -->
+        <div id="usersContent" class="tab-content bg-white p-6 rounded-lg shadow-sm">
+          <h2 class="text-2xl font-bold mb-4">Users Management</h2>
+          <div class="mb-4">
+            <span class="mr-4">Total Users: <strong id="totalUsersCount">0</strong></span>
+            <span class="mr-4">Active: <strong id="activeUsersCount">0</strong></span>
+            <span>Inactive: <strong id="inactiveUsersCount">0</strong></span>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="text-xs uppercase bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3">Username</th>
+                  <th class="px-6 py-3">Email</th>
+                  <th class="px-6 py-3">Status</th>
+                  <th class="px-6 py-3">Joined On</th>
+                  <th class="px-6 py-3 w-[200px]">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <!-- Users will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Admin Management Tab -->
+        <div id="adminsContent" class="tab-content bg-white p-6 rounded-lg shadow-sm">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Admin Management</h2>
+            <button id="addAdminBtn" class="inline-flex items-center px-4 py-2 text-sm font-medium bg-purple-600 text-white rounded-md hover:bg-purple-700">
+              <i data-lucide="user-plus" class="h-4 w-4 mr-2"></i>
+              Add New Admin
+            </button>
+          </div>
+          
+          <div class="mb-4">
+            <span class="mr-4">Total Admins: <strong id="totalAdminsCount">0</strong></span>
+            <span class="mr-4">Active: <strong id="activeAdminsCount">0</strong></span>
+            <span>Inactive: <strong id="inactiveAdminsCount">0</strong></span>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="text-xs uppercase bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3">Username</th>
+                  <th class="px-6 py-3">Role</th>
+                  <th class="px-6 py-3">Status</th>
+                  <th class="px-6 py-3">Created At</th>
+                  <th class="px-6 py-3 w-[200px]">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminsTableBody">
+                <!-- Admins will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- User Activity Tab -->
+        <div id="activityContent" class="tab-content bg-white p-6 rounded-lg shadow-sm">
+          <h2 class="text-2xl font-bold mb-4">User Activity</h2>
+          
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="text-xs uppercase bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3">User</th>
+                  <th class="px-6 py-3">Action</th>
+                  <th class="px-6 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody id="activityTableBody">
+                <!-- Activities will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Tool Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold">Edit Tool</h3>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-4 items-center gap-4">
+          <label class="text-right text-sm font-medium">Name</label>
+          <input id="editName" type="text" class="col-span-3 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <label class="text-right text-sm font-medium">Link</label>
+          <input id="editLink" type="text" class="col-span-3 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <label class="text-right text-sm font-medium">Image URL</label>
+          <input id="editImageUrl" type="text" class="col-span-3 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <label class="text-right text-sm font-medium">Category</label>
+          <select id="editCategory" class="col-span-3 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <option value="productivity">Productivity</option>
+            <option value="creativity">Creativity</option>
+            <option value="development">Development</option>
+            <option value="education">Education</option>
+            <option value="entertainment">Entertainment</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-4 items-start gap-4">
+          <label class="text-right text-sm font-medium">Description</label>
+          <textarea id="editDescription" rows="3" class="col-span-3 flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
+        <button id="cancelEdit" class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50">Cancel</button>
+        <button id="saveEdit" class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-purple-600 text-white hover:bg-purple-700">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Admin Modal -->
+  <div id="addAdminModal" class="modal">
+    <div class="modal-content">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold">Add New Admin</h3>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-4 items-center gap-4">
+          <label class="text-right text-sm font-medium">Username</label>
+          <input id="newAdminUsername" type="text" class="col-span-3 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <label class="text-right text-sm font-medium">Password</label>
+          <input id="newAdminPassword" type="password" class="col-span-3 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <label class="text-right text-sm font-medium">Role</label>
+          <select id="newAdminRole" class="col-span-3 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <option value="admin">Admin</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
+        <button id="cancelAddAdmin" class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50">Cancel</button>
+        <button id="saveAddAdmin" class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-purple-600 text-white hover:bg-purple-700">Add Admin</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Password Modal -->
+  <div id="resetPasswordModal" class="modal">
+    <div class="modal-content">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold">Reset Password</h3>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-4 items-center gap-4">
+          <label class="text-right text-sm font-medium">Username</label>
+          <input id="resetUsername" type="text" readonly class="col-span-3 flex h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm" />
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <label class="text-right text-sm font-medium">New Password</label>
+          <input id="resetNewPassword" type="password" class="col-span-3 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
+        <button id="cancelResetPassword" class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50">Cancel</button>
+        <button id="saveResetPassword" class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-purple-600 text-white hover:bg-purple-700">Reset Password</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Check authentication
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      window.location.href = 'admin-login.html';
+    }
+
+    // Sample data
+    const tools = [
+      { id: '1', name: 'AI Text Generator', status: 'pending', createdAt: new Date('2025-05-10'), description: 'Generate text using AI', link: 'https://example.com', imageUrl: 'https://example.com/image.jpg', category: 'productivity' },
+      { id: '2', name: 'Image Recognition Tool', status: 'approved', createdAt: new Date('2025-05-08'), description: 'Recognize objects in images', link: 'https://example.com', imageUrl: 'https://example.com/image.jpg', category: 'creativity' },
+      { id: '3', name: 'Data Visualizer', status: 'rejected', createdAt: new Date('2025-05-06'), description: 'Visualize data with charts', link: 'https://example.com', imageUrl: 'https://example.com/image.jpg', category: 'development' },
+      { id: '4', name: 'Speech to Text Converter', status: 'pending', createdAt: new Date('2025-05-12'), description: 'Convert speech to text', link: 'https://example.com', imageUrl: 'https://example.com/image.jpg', category: 'productivity' },
+      { id: '5', name: 'Code Generator', status: 'approved', createdAt: new Date('2025-05-01'), description: 'Generate code automatically', link: 'https://example.com', imageUrl: 'https://example.com/image.jpg', category: 'development' }
+    ];
+
+    const users = [
+      { id: '1', username: 'john_doe', email: 'john@example.com', status: 'active', createdAt: new Date('2024-04-15') },
+      { id: '2', username: 'jane_smith', email: 'jane@example.com', status: 'active', createdAt: new Date('2024-04-10') },
+      { id: '3', username: 'bob_johnson', email: 'bob@example.com', status: 'inactive', createdAt: new Date('2024-04-05') },
+      { id: '4', username: 'alice_williams', email: 'alice@example.com', status: 'active', createdAt: new Date('2024-04-01') },
+      { id: '5', username: 'mike_brown', email: 'mike@example.com', status: 'inactive', createdAt: new Date('2024-03-25') }
+    ];
+
+    const activities = [
+      { username: 'john_doe', action: 'Created new tool: AI Text Generator', timestamp: new Date('2025-05-10') },
+      { username: 'jane_smith', action: 'Updated tool: Image Recognition Tool', timestamp: new Date('2025-05-08') },
+      { username: 'admin', action: 'Approved tool: Code Generator', timestamp: new Date('2025-05-02') },
+      { username: 'mark_wilson', action: 'Created new tool: Speech to Text Converter', timestamp: new Date('2025-05-12') },
+      { username: 'admin', action: 'Rejected tool: Data Visualizer', timestamp: new Date('2025-05-07') }
+    ];
+
+    let currentEditingTool = null;
+    let currentResetUsername = null;
+
+    // DOM Elements
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const signOutBtn = document.getElementById('signOutBtn');
+    const editModal = document.getElementById('editModal');
+    const addAdminModal = document.getElementById('addAdminModal');
+    const resetPasswordModal = document.getElementById('resetPasswordModal');
+
+    // Sidebar toggle
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('-translate-x-full');
+    });
+
+    // Sign out
+    signOutBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to sign out?')) {
+        localStorage.removeItem('adminToken');
+        window.location.href = 'admin-login.html';
+      }
+    });
+
+    // Admin management modal handlers
+    document.getElementById('addAdminBtn').addEventListener('click', () => {
+      addAdminModal.classList.add('active');
+    });
+
+    document.getElementById('cancelAddAdmin').addEventListener('click', () => {
+      addAdminModal.classList.remove('active');
+      clearAddAdminForm();
+    });
+
+    document.getElementById('saveAddAdmin').addEventListener('click', () => {
+      const username = document.getElementById('newAdminUsername').value;
+      const password = document.getElementById('newAdminPassword').value;
+      const role = document.getElementById('newAdminRole').value;
+      
+      if (username && password) {
+        addNewAdmin(username, password, role);
+        addAdminModal.classList.remove('active');
+        clearAddAdminForm();
+      } else {
+        showToast('Error', 'Please fill in all fields', 'error');
+      }
+    });
+
+    document.getElementById('cancelResetPassword').addEventListener('click', () => {
+      resetPasswordModal.classList.remove('active');
+    });
+
+    document.getElementById('saveResetPassword').addEventListener('click', () => {
+      const newPassword = document.getElementById('resetNewPassword').value;
+      
+      if (newPassword && currentResetUsername) {
+        resetAdminPassword(currentResetUsername, newPassword);
+        resetPasswordModal.classList.remove('active');
+        document.getElementById('resetNewPassword').value = '';
+      } else {
+        showToast('Error', 'Please enter a new password', 'error');
+      }
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab-trigger').forEach(trigger => {
+      trigger.addEventListener('click', () => {
+        const tabName = trigger.getAttribute('data-tab');
+        
+        // Update tab triggers
+        document.querySelectorAll('.tab-trigger').forEach(t => {
+          t.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+        });
+        trigger.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+        
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(tabName + 'Content').classList.add('active');
+        
+        // Load content based on tab
+        if (tabName === 'tools') {
+          renderTools();
+        } else if (tabName === 'users') {
+          renderUsers();
+        } else if (tabName === 'admins') {
+          renderAdmins();
+        } else if (tabName === 'activity') {
+          renderActivity();
+        }
+      });
+    });
+
+    // Navigation links
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tabName = link.getAttribute('data-tab');
+        
+        // Trigger corresponding tab
+        document.querySelector(`[data-tab="${tabName}"].tab-trigger`).click();
+      });
+    });
+
+    // Tool filter buttons
+    document.querySelectorAll('.tool-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter');
+        
+        // Update active state
+        document.querySelectorAll('.tool-filter-btn').forEach(b => {
+          b.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+        });
+        btn.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+        
+        renderTools(filter);
+      });
+    });
+
+    // Modal handlers
+    document.getElementById('cancelEdit').addEventListener('click', () => {
+      editModal.classList.remove('active');
+    });
+
+    document.getElementById('saveEdit').addEventListener('click', () => {
+      if (currentEditingTool) {
+        const tool = tools.find(t => t.id === currentEditingTool);
+        if (tool) {
+          tool.name = document.getElementById('editName').value;
+          tool.link = document.getElementById('editLink').value;
+          tool.imageUrl = document.getElementById('editImageUrl').value;
+          tool.category = document.getElementById('editCategory').value;
+          tool.description = document.getElementById('editDescription').value;
+          
+          renderTools();
+          editModal.classList.remove('active');
+          showToast('Tool Updated', 'Tool has been updated successfully.');
+        }
+      }
+    });
+
+    // Close modal when clicking outside
+    [editModal, addAdminModal, resetPasswordModal].forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('active');
+        }
+      });
+    });
+
+    // Render functions
+    function renderTools(filter = 'all') {
+      const tbody = document.getElementById('toolsTableBody');
+      tbody.innerHTML = '';
+      
+      const filteredTools = filter === 'all' ? tools : tools.filter(t => t.status === filter);
+      
+      if (filteredTools.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">No tools found.</td></tr>';
+        return;
+      }
+      
+      filteredTools.forEach(tool => {
+        const row = document.createElement('tr');
+        row.className = 'bg-white border-b hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="px-6 py-4 font-medium">${tool.name}</td>
+          <td class="px-6 py-4"><span class="badge badge-${tool.status}">${tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}</span></td>
+          <td class="px-6 py-4">${tool.createdAt.toLocaleDateString()}</td>
+          <td class="px-6 py-4">
+            <div class="flex space-x-2">
+              ${tool.status === 'pending' ? `
+                <button onclick="approveTool('${tool.id}')" class="inline-flex items-center px-3 py-1 text-xs border border-green-500 text-green-500 rounded hover:bg-green-50">
+                  <i data-lucide="check" class="h-3 w-3 mr-1"></i> Approve
+                </button>
+                <button onclick="rejectTool('${tool.id}')" class="inline-flex items-center px-3 py-1 text-xs border border-red-500 text-red-500 rounded hover:bg-red-50">
+                  <i data-lucide="x" class="h-3 w-3 mr-1"></i> Reject
+                </button>
+              ` : ''}
+              ${tool.status === 'approved' ? `
+                <button onclick="editTool('${tool.id}')" class="inline-flex items-center px-3 py-1 text-xs border border-blue-500 text-blue-500 rounded hover:bg-blue-50">
+                  <i data-lucide="edit" class="h-3 w-3 mr-1"></i> Edit
+                </button>
+              ` : ''}
+              <button onclick="deleteTool('${tool.id}')" class="inline-flex items-center px-3 py-1 text-xs border border-slate-500 text-slate-500 rounded hover:bg-slate-50">
+                <i data-lucide="trash-2" class="h-3 w-3"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      lucide.createIcons();
+      updateToolCounts();
+    }
+
+    function renderUsers() {
+      const tbody = document.getElementById('usersTableBody');
+      tbody.innerHTML = '';
+      
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No users found.</td></tr>';
+        return;
+      }
+      
+      users.forEach(user => {
+        const row = document.createElement('tr');
+        row.className = 'bg-white border-b hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="px-6 py-4 font-medium">
+            <div class="flex items-center">
+              <i data-lucide="user" class="h-4 w-4 mr-2 text-slate-500"></i>
+              ${user.username}
+            </div>
+          </td>
+          <td class="px-6 py-4">${user.email}</td>
+          <td class="px-6 py-4"><span class="badge badge-${user.status}">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span></td>
+          <td class="px-6 py-4">${user.createdAt.toLocaleDateString()}</td>
+          <td class="px-6 py-4">
+            <div class="flex space-x-2">
+              ${user.status === 'active' ? `
+                <button onclick="deactivateUser('${user.id}')" class="inline-flex items-center px-3 py-1 text-xs border border-amber-500 text-amber-500 rounded hover:bg-amber-50">
+                  <i data-lucide="user-x" class="h-3 w-3 mr-1"></i> Deactivate
+                </button>
+              ` : `
+                <button onclick="activateUser('${user.id}')" class="inline-flex items-center px-3 py-1 text-xs border border-green-500 text-green-500 rounded hover:bg-green-50">
+                  <i data-lucide="user-check" class="h-3 w-3 mr-1"></i> Activate
+                </button>
+              `}
+              <button onclick="deleteUser('${user.id}')" class="inline-flex items-center px-3 py-1 text-xs border border-slate-500 text-slate-500 rounded hover:bg-slate-50">
+                <i data-lucide="trash-2" class="h-3 w-3"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      lucide.createIcons();
+      updateUserCounts();
+    }
+
+    function renderAdmins() {
+      const tbody = document.getElementById('adminsTableBody');
+      tbody.innerHTML = '';
+      
+      const adminAccounts = JSON.parse(localStorage.getItem('adminAccounts') || '{}');
+      const admins = Object.values(adminAccounts);
+      
+      if (admins.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No admins found.</td></tr>';
+        return;
+      }
+      
+      admins.forEach(admin => {
+        const row = document.createElement('tr');
+        row.className = 'bg-white border-b hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="px-6 py-4 font-medium">
+            <div class="flex items-center">
+              <i data-lucide="user" class="h-4 w-4 mr-2 text-slate-500"></i>
+              ${admin.username}
+            </div>
+          </td>
+          <td class="px-6 py-4">
+            <span class="badge ${admin.role === 'super_admin' ? 'badge-approved' : 'badge-pending'}">
+              ${admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+            </span>
+          </td>
+          <td class="px-6 py-4">
+            <span class="badge badge-${admin.isActive ? 'active' : 'inactive'}">
+              ${admin.isActive ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+          <td class="px-6 py-4">${new Date(admin.createdAt).toLocaleDateString()}</td>
+          <td class="px-6 py-4">
+            <div class="flex space-x-2">
+              <button onclick="openResetPasswordModal('${admin.username}')" class="inline-flex items-center px-3 py-1 text-xs border border-blue-500 text-blue-500 rounded hover:bg-blue-50">
+                <i data-lucide="key" class="h-3 w-3 mr-1"></i> Reset Password
+              </button>
+              ${admin.username !== 'admin' ? `
+                ${admin.isActive ? `
+                  <button onclick="toggleAdminStatus('${admin.username}', false)" class="inline-flex items-center px-3 py-1 text-xs border border-amber-500 text-amber-500 rounded hover:bg-amber-50">
+                    <i data-lucide="user-minus" class="h-3 w-3 mr-1"></i> Deactivate
+                  </button>
+                ` : `
+                  <button onclick="toggleAdminStatus('${admin.username}', true)" class="inline-flex items-center px-3 py-1 text-xs border border-green-500 text-green-500 rounded hover:bg-green-50">
+                    <i data-lucide="user-plus" class="h-3 w-3 mr-1"></i> Activate
+                  </button>
+                `}
+                <button onclick="deleteAdmin('${admin.username}')" class="inline-flex items-center px-3 py-1 text-xs border border-slate-500 text-slate-500 rounded hover:bg-slate-50">
+                  <i data-lucide="user-minus" class="h-3 w-3"></i>
+                </button>
+              ` : ''}
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      lucide.createIcons();
+      updateAdminCounts();
+    }
+
+    function renderActivity() {
+      const tbody = document.getElementById('activityTableBody');
+      tbody.innerHTML = '';
+      
+      if (activities.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">No activity recorded.</td></tr>';
+        return;
+      }
+      
+      activities.forEach(activity => {
+        const row = document.createElement('tr');
+        row.className = 'bg-white border-b hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="px-6 py-4 font-medium">${activity.username}</td>
+          <td class="px-6 py-4">${activity.action}</td>
+          <td class="px-6 py-4">${activity.timestamp.toLocaleDateString()}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateToolCounts() {
+      document.getElementById('totalToolsCount').textContent = tools.length;
+      document.getElementById('pendingToolsCount').textContent = tools.filter(t => t.status === 'pending').length;
+      document.getElementById('approvedToolsCount').textContent = tools.filter(t => t.status === 'approved').length;
+      document.getElementById('rejectedToolsCount').textContent = tools.filter(t => t.status === 'rejected').length;
+    }
+
+    function updateUserCounts() {
+      document.getElementById('totalUsersCount').textContent = users.length;
+      document.getElementById('activeUsersCount').textContent = users.filter(u => u.status === 'active').length;
+      document.getElementById('inactiveUsersCount').textContent = users.filter(u => u.status === 'inactive').length;
+    }
+
+    function updateAdminCounts() {
+      const adminAccounts = JSON.parse(localStorage.getItem('adminAccounts') || '{}');
+      const admins = Object.values(adminAccounts);
+      
+      document.getElementById('totalAdminsCount').textContent = admins.length;
+      document.getElementById('activeAdminsCount').textContent = admins.filter(a => a.isActive).length;
+      document.getElementById('inactiveAdminsCount').textContent = admins.filter(a => !a.isActive).length;
+    }
+
+    // Action functions
+    window.approveTool = function(id) {
+      const tool = tools.find(t => t.id === id);
+      if (tool) {
+        tool.status = 'approved';
+        activities.unshift({
+          username: 'admin',
+          action: `Approved tool: ${tool.name}`,
+          timestamp: new Date()
+        });
+        renderTools(document.querySelector('.tool-filter-btn.bg-white').getAttribute('data-filter'));
+        showToast('Tool Approved', `${tool.name} has been approved.`);
+      }
+    };
+
+    window.rejectTool = function(id) {
+      const tool = tools.find(t => t.id === id);
+      if (tool) {
+        tool.status = 'rejected';
+        activities.unshift({
+          username: 'admin',
+          action: `Rejected tool: ${tool.name}`,
+          timestamp: new Date()
+        });
+        renderTools(document.querySelector('.tool-filter-btn.bg-white').getAttribute('data-filter'));
+        showToast('Tool Rejected', `${tool.name} has been rejected.`);
+      }
+    };
+
+    window.editTool = function(id) {
+      const tool = tools.find(t => t.id === id);
+      if (tool) {
+        currentEditingTool = id;
+        document.getElementById('editName').value = tool.name;
+        document.getElementById('editLink').value = tool.link;
+        document.getElementById('editImageUrl').value = tool.imageUrl;
+        document.getElementById('editCategory').value = tool.category;
+        document.getElementById('editDescription').value = tool.description;
+        editModal.classList.add('active');
+      }
+    };
+
+    window.deleteTool = function(id) {
+      if (confirm('Are you sure you want to delete this tool? This action cannot be undone.')) {
+        const toolIndex = tools.findIndex(t => t.id === id);
+        if (toolIndex !== -1) {
+          const tool = tools[toolIndex];
+          tools.splice(toolIndex, 1);
+          activities.unshift({
+            username: 'admin',
+            action: `Deleted tool: ${tool.name}`,
+            timestamp: new Date()
+          });
+          renderTools(document.querySelector('.tool-filter-btn.bg-white').getAttribute('data-filter'));
+          showToast('Tool Deleted', `${tool.name} has been deleted.`);
+        }
+      }
+    };
+
+    window.activateUser = function(id) {
+      const user = users.find(u => u.id === id);
+      if (user) {
+        user.status = 'active';
+        activities.unshift({
+          username: 'admin',
+          action: `Activated user: ${user.username}`,
+          timestamp: new Date()
+        });
+        renderUsers();
+        showToast('User Activated', `${user.username} has been activated.`);
+      }
+    };
+
+    window.deactivateUser = function(id) {
+      const user = users.find(u => u.id === id);
+      if (user) {
+        user.status = 'inactive';
+        activities.unshift({
+          username: 'admin',
+          action: `Deactivated user: ${user.username}`,
+          timestamp: new Date()
+        });
+        renderUsers();
+        showToast('User Deactivated', `${user.username} has been deactivated.`);
+      }
+    };
+
+    window.deleteUser = function(id) {
+      if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+        const userIndex = users.findIndex(u => u.id === id);
+        if (userIndex !== -1) {
+          const user = users[userIndex];
+          users.splice(userIndex, 1);
+          activities.unshift({
+            username: 'admin',
+            action: `Deleted user: ${user.username}`,
+            timestamp: new Date()
+          });
+          renderUsers();
+          showToast('User Deleted', `${user.username} has been deleted.`);
+        }
+      }
+    };
+
+    window.toggleAdminStatus = function(username, isActive) {
+      const adminAccounts = JSON.parse(localStorage.getItem('adminAccounts') || '{}');
+      
+      if (adminAccounts[username]) {
+        adminAccounts[username].isActive = isActive;
+        localStorage.setItem('adminAccounts', JSON.stringify(adminAccounts));
+        renderAdmins();
+        
+        const action = isActive ? 'activated' : 'deactivated';
+        showToast('Admin Status Updated', `${username} has been ${action}`, 'success');
+        
+        activities.unshift({
+          username: 'admin',
+          action: `${action.charAt(0).toUpperCase() + action.slice(1)} admin: ${username}`,
+          timestamp: new Date()
+        });
+      }
+    };
+
+    window.addNewAdmin = function(username, password, role) {
+      const adminAccounts = JSON.parse(localStorage.getItem('adminAccounts') || '{}');
+      
+      if (adminAccounts[username]) {
+        showToast('Error', 'Admin with this username already exists', 'error');
+        return;
+      }
+      
+      adminAccounts[username] = {
+        username: username,
+        password: password,
+        role: role,
+        createdAt: new Date().toISOString(),
+        isActive: true
+      };
+      
+      localStorage.setItem('adminAccounts', JSON.stringify(adminAccounts));
+      renderAdmins();
+      showToast('Admin Added', `${username} has been added as ${role}`, 'success');
+      
+      activities.unshift({
+        username: 'admin',
+        action: `Added new admin: ${username}`,
+        timestamp: new Date()
+      });
+    };
+
+    function clearAddAdminForm() {
+      document.getElementById('newAdminUsername').value = '';
+      document.getElementById('newAdminPassword').value = '';
+      document.getElementById('newAdminRole').value = 'admin';
+    }
+
+    window.openResetPasswordModal = function(username) {
+      currentResetUsername = username;
+      document.getElementById('resetUsername').value = username;
+      resetPasswordModal.classList.add('active');
+    };
+
+    function resetAdminPassword(username, newPassword) {
+      const adminAccounts = JSON.parse(localStorage.getItem('adminAccounts') || '{}');
+      
+      if (adminAccounts[username]) {
+        adminAccounts[username].password = newPassword;
+        localStorage.setItem('adminAccounts', JSON.stringify(adminAccounts));
+        showToast('Password Reset', `Password has been reset for ${username}`, 'success');
+        
+        activities.unshift({
+          username: 'admin',
+          action: `Reset password for admin: ${username}`,
+          timestamp: new Date()
+        });
+      }
+    }
+
+    window.deleteAdmin = function(username) {
+      if (confirm('Are you sure you want to delete this admin? This action cannot be undone.')) {
+        const adminAccounts = JSON.parse(localStorage.getItem('adminAccounts') || '{}');
+        
+        if (adminAccounts[username]) {
+          delete adminAccounts[username];
+          localStorage.setItem('adminAccounts', JSON.stringify(adminAccounts));
+          renderAdmins();
+          showToast('Admin Deleted', `${username} has been deleted`, 'success');
+          
+          activities.unshift({
+            username: 'admin',
+            action: `Deleted admin: ${username}`,
+            timestamp: new Date()
+          });
+        }
+      }
+    };
+
+    // Toast notification system
+    function showToast(title, message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-semibold">${title}</div>
+            <div class="text-sm text-gray-600 mt-1">${message}</div>
+          </div>
+          <button class="ml-4 text-gray-400 hover:text-gray-600" onclick="this.parentElement.parentElement.remove()">
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(toast);
+      lucide.createIcons();
+      
+      // Auto remove after 5 seconds
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.style.animation = 'slideOut 0.3s ease-in forwards';
+          setTimeout(() => toast.remove(), 300);
+        }
+      }, 5000);
+    }
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth < 768 && !sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+        sidebar.classList.add('-translate-x-full');
+      }
+    });
+
+    // Initialize
+    renderTools();
+    updateToolCounts();
+    updateUserCounts();
+    updateAdminCounts();
+  </script>
+</body>
+</html>

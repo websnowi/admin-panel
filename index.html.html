@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | AI Tools Navigator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 16px 20px;
+      max-width: 400px;
+      z-index: 1000;
+      border-left: 4px solid #10b981;
+      animation: slideIn 0.3s ease-out;
+    }
+    .toast.error {
+      border-left-color: #ef4444;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-slate-100">
+  <div class="w-[350px] bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h1 class="text-2xl font-bold text-center">Admin Login</h1>
+    </div>
+    <div class="p-6">
+      <form id="loginForm" class="space-y-4">
+        <div class="space-y-2">
+          <input
+            id="username"
+            type="text"
+            placeholder="Username"
+            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            required
+          />
+        </div>
+        <div class="space-y-2">
+          <input
+            id="password"
+            type="password"
+            placeholder="Password"
+            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            required
+          />
+        </div>
+        <button 
+          type="submit" 
+          id="loginBtn"
+          class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-10 px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Sign In
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Initialize default admin accounts in localStorage if not exists
+    function initializeAdminAccounts() {
+      const existingAdmins = localStorage.getItem('adminAccounts');
+      if (!existingAdmins) {
+        const defaultAdmins = {
+          'admin': {
+            username: 'admin',
+            password: 'admin123',
+            role: 'super_admin',
+            createdAt: new Date().toISOString(),
+            isActive: true
+          }
+        };
+        localStorage.setItem('adminAccounts', JSON.stringify(defaultAdmins));
+      }
+    }
+
+    // Check if already authenticated
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      window.location.href = 'admin-panel.html';
+    }
+
+    // Initialize admin accounts
+    initializeAdminAccounts();
+
+    // Form elements
+    const loginForm = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+
+    // Handle login
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const username = usernameInput.value;
+      const password = passwordInput.value;
+      
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
+      
+      // Get admin accounts from localStorage
+      const adminAccounts = JSON.parse(localStorage.getItem('adminAccounts') || '{}');
+      
+      setTimeout(() => {
+        const admin = adminAccounts[username];
+        
+        if (admin && admin.password === password && admin.isActive) {
+          // Set auth token and admin info in localStorage
+          localStorage.setItem('adminToken', 'admin-token-' + Date.now());
+          localStorage.setItem('currentAdmin', JSON.stringify({
+            username: admin.username,
+            role: admin.role
+          }));
+          
+          showToast('Login Successful', 'Redirecting to admin panel...', 'success');
+          
+          setTimeout(() => {
+            window.location.href = 'admin-panel.html';
+          }, 1000);
+        } else {
+          showToast('Login Failed', 'Invalid credentials or account is inactive', 'error');
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Sign In';
+        }
+      }, 1000);
+    });
+
+    // Toast notification system
+    function showToast(title, message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-semibold">${title}</div>
+            <div class="text-sm text-gray-600 mt-1">${message}</div>
+          </div>
+          <button class="ml-4 text-gray-400 hover:text-gray-600" onclick="this.parentElement.parentElement.remove()">
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(toast);
+      lucide.createIcons();
+      
+      // Auto remove after 5 seconds
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.style.animation = 'slideOut 0.3s ease-in forwards';
+          setTimeout(() => toast.remove(), 300);
+        }
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
